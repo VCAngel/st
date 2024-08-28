@@ -5,10 +5,9 @@
  *
  * font: see http://freedesktop.org/software/fontconfig/fontconfig-user.html
  */
-static char *font = "mono:pixelsize=12:antialias=true:autohint=true";
-static char *font2[] = {
-    "NotoColorEmoji:pixelsize=10:antialias=true:autohint=true"};
-static int borderpx = 2;
+static char *font = "FiraCode Nerd Font Ret:pixelsize=12:antialias=true:autohint=true:";
+static char *font2[] = {"Noto Emoji:pixelsize=12:antialias=true:autohint=true", "icons-in-terminal:style=in-terminal"};
+static int borderpx = 12;
 
 /*
  * What program is execed by st depends of these precedence rules:
@@ -108,16 +107,29 @@ char *termname = "st-256color";
 unsigned int tabspaces = 8;
 
 /* bg opacity */
-float alpha = 0.8;
+float alpha = 0.9;
 float alphaOffset = 0.0;
 float alphaUnfocus;
 
 /* Terminal colors (16 first used in escape sequence) */
 static const char *colorname[] = {
     "#282828", /* hard contrast: #1d2021 / soft contrast: #32302f */
-    "#cc241d", "#98971a", "#d79921", "#458588", "#b16286", "#689d6a", "#a89984",
-    "#928374", "#fb4934", "#b8bb26", "#fabd2f", "#83a598", "#d3869b", "#8ec07c",
-    "#ebdbb2", [255] = 0,
+    "#cc241d",
+    "#98971a",
+    "#d79921",
+    "#458588",
+    "#b16286",
+    "#689d6a",
+    "#a89984",
+    "#928374",
+    "#fb4934",
+    "#b8bb26",
+    "#fabd2f",
+    "#83a598",
+    "#d3869b",
+    "#8ec07c",
+    "#ebdbb2",
+    [255] = 0,
     /* more colors can be added after 255 to use with DefaultXX */
     "#add8e6", /* 256 -> cursor */
     "#555555", /* 257 -> rev cursor*/
@@ -214,8 +226,8 @@ ResourcePref resources[] = {
  * Internal mouse shortcuts.
  * Beware that overloading Button1 will disable the selection.
  */
+/* {mask, button, function, argument, release} */
 static MouseShortcut mshortcuts[] = {
-    /* mask                 button   function        argument       release */
     {XK_NO_MOD, Button4, kscrollup, {.i = 1}},
     {XK_NO_MOD, Button5, kscrolldown, {.i = 1}},
     {XK_ANY_MOD, Button2, selpaste, {.i = 0}, 1},
@@ -229,15 +241,12 @@ static MouseShortcut mshortcuts[] = {
 #define MODKEY Mod1Mask
 #define TERMMOD (Mod1Mask | ShiftMask)
 
-static char *openurlcmd[] = {"/bin/sh", "-c", "st-urlhandler -o",
-                             "externalpipe", NULL};
-static char *copyurlcmd[] = {"/bin/sh", "-c", "st-urlhandler -c",
-                             "externalpipe", NULL};
-static char *copyoutput[] = {"/bin/sh", "-c", "st-copyout", "externalpipe",
-                             NULL};
+static char *openurlcmd[] = {"/bin/sh", "-c", "st-urlhandler -o", "externalpipe", NULL};
+static char *copyurlcmd[] = {"/bin/sh", "-c", "st-urlhandler -c", "externalpipe", NULL};
+static char *copyoutput[] = {"/bin/sh", "-c", "st-copyout", "externalpipe", NULL};
 
+/* {mask, keysym, function, argument}[] */
 static Shortcut shortcuts[] = {
-    /* mask                 keysym          function        argument */
     {XK_ANY_MOD, XK_Break, sendbreak, {.i = 0}},
     {ControlMask, XK_Print, toggleprinter, {.i = 0}},
     {ShiftMask, XK_Print, printscreen, {.i = 0}},
@@ -312,8 +321,8 @@ static uint ignoremod = Mod2Mask | XK_SWITCH_MOD;
  * This is the huge key array which defines all compatibility to the Linux
  * world. Please decide about changes wisely.
  */
+/* {keysym, mask, string, appkey, appcursor}[] */
 static Key key[] = {
-    /* keysym           mask            string      appkey appcursor */
     {XK_KP_Home, ShiftMask, "\033[2J", 0, -1},
     {XK_KP_Home, ShiftMask, "\033[1;2H", 0, +1},
     {XK_KP_Home, XK_ANY_MOD, "\033[H", 0, -1},
@@ -540,30 +549,7 @@ static uint selmasks[] = {
  * Printable characters in ASCII, used to estimate the advance width
  * of single wide characters.
  */
-static char ascii_printable[] = " !\"#$%&'()*+,-./0123456789:;<=>?"
-                                "@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_"
-                                "`abcdefghijklmnopqrstuvwxyz{|}~";
-
-/**
- * Undercurl style. Set UNDERCURL_STYLE to one of the available styles.
- *
- * Curly: Dunno how to draw it *shrug*
- *
- * ⋂ ⋂ ⋂ ⋂ ⋂ ⋂
- *  ⋃ ⋃ ⋃ ⋃ ⋃ ⋃
- *
- * Spiky:
- * /\  /\  /\  /\
- *   \/  \/  \/
- *
- * Capped:
- *  _     _     _
- * / \   / \   / \
- *    \_/   \_/
- */
-// Available styles
-#define UNDERCURL_CURLY 0
-#define UNDERCURL_SPIKY 1
-#define UNDERCURL_CAPPED 2
-// Active style
-#define UNDERCURL_STYLE UNDERCURL_SPIKY
+static char ascii_printable[] =
+    " !\"#$%&'()*+,-./0123456789:;<=>?"
+    "@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_"
+    "`abcdefghijklmnopqrstuvwxyz{|}~";
