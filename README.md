@@ -32,6 +32,7 @@ features that make it literally the best terminal emulator ever:
 - Boxdraw
 - Ligatures
 - font2
+- [st-undercurl](https://st.suckless.org/patches/undercurl/) v0.9-20240103
 - updated to latest version 0.8.5
 
 ## Installation for newbs

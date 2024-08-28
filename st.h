@@ -10,19 +10,22 @@
 #define BETWEEN(x, a, b) ((a) <= (x) && (x) <= (b))
 #define DIVCEIL(n, d) (((n) + ((d) - 1)) / (d))
 #define DEFAULT(a, b) (a) = (a) ? (a) : (b)
-#define LIMIT(x, a, b) (x) = (x) < (a) ? (a) : (x) > (b) ? (b) : (x)
-#define ATTRCMP(a, b)                                                          \
-  (((a).mode & (~ATTR_WRAP) & (~ATTR_LIGA)) !=                                 \
-       ((b).mode & (~ATTR_WRAP) & (~ATTR_LIGA)) ||                             \
-   (a).fg != (b).fg || (a).bg != (b).bg)
-#define TIMEDIFF(t1, t2)                                                       \
+#define LIMIT(x, a, b) (x) = (x) < (a) ? (a) : (x) > (b) ? (b) \
+                                                         : (x)
+#define ATTRCMP(a, b)                              \
+  (((a).mode & (~ATTR_WRAP) & (~ATTR_LIGA)) !=     \
+       ((b).mode & (~ATTR_WRAP) & (~ATTR_LIGA)) || \
+   (a).fg != (b).fg ||                             \
+   (a).bg != (b).bg)
+#define TIMEDIFF(t1, t2) \
   ((t1.tv_sec - t2.tv_sec) * 1000 + (t1.tv_nsec - t2.tv_nsec) / 1E6)
 #define MODBIT(x, set, bit) ((set) ? ((x) |= (bit)) : ((x) &= ~(bit)))
 
 #define TRUECOLOR(r, g, b) (1 << 24 | (r) << 16 | (g) << 8 | (b))
 #define IS_TRUECOL(x) (1 << 24 & (x))
 
-enum glyph_attribute {
+enum glyph_attribute
+{
   ATTR_NULL = 0,
   ATTR_BOLD = 1 << 0,
   ATTR_FAINT = 1 << 1,
@@ -40,9 +43,25 @@ enum glyph_attribute {
   ATTR_BOLD_FAINT = ATTR_BOLD | ATTR_FAINT,
   ATTR_DIRTYUNDERLINE = 1 << 15,
 };
-enum selection_mode { SEL_IDLE = 0, SEL_EMPTY = 1, SEL_READY = 2 };
-enum selection_type { SEL_REGULAR = 1, SEL_RECTANGULAR = 2 };
-enum selection_snap { SNAP_WORD = 1, SNAP_LINE = 2 };
+
+enum selection_mode
+{
+  SEL_IDLE = 0,
+  SEL_EMPTY = 1,
+  SEL_READY = 2
+};
+
+enum selection_type
+{
+  SEL_REGULAR = 1,
+  SEL_RECTANGULAR = 2
+};
+
+enum selection_snap
+{
+  SNAP_WORD = 1,
+  SNAP_LINE = 2
+};
 
 typedef unsigned char uchar;
 typedef unsigned int uint;
@@ -52,7 +71,8 @@ typedef unsigned short ushort;
 typedef uint_least32_t Rune;
 
 #define Glyph Glyph_
-typedef struct {
+typedef struct
+{
   Rune u;        /* character code */
   ushort mode;   /* attribute flags */
   uint32_t fg;   /* foreground  */
@@ -63,7 +83,8 @@ typedef struct {
 
 typedef Glyph *Line;
 
-typedef union {
+typedef union
+{
   int i;
   uint ui;
   float f;
