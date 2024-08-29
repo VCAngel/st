@@ -27,12 +27,13 @@ features that make it literally the best terminal emulator ever:
 - Default font is system "mono" at 14pt, meaning the font will match your
   system font.
 
-## Other st patches
+## Active st patches
 
 - Boxdraw
 - Ligatures
 - font2
 - [st-undercurl](https://st.suckless.org/patches/undercurl/) v0.9-20240103
+- [st-anysize](https://st.suckless.org/patches/anysize/) v20220718-baa9357
 - updated to latest version 0.8.5
 
 ## Installation for newbs

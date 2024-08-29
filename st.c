@@ -1168,6 +1168,9 @@ void tscrollup(int orig, int n, int copyhist)
   int i;
   Line temp;
 
+  if (sel.ob.x == -1 || sel.alt != IS_SET(MODE_ALTSCREEN))
+    return;
+
   LIMIT(n, 0, term.bot - orig + 1);
 
   if (copyhist)
@@ -1261,6 +1264,7 @@ void csiparse(void)
 {
   char *p = csiescseq.buf, *np;
   long int v;
+  int sep = ';'; /* colon or semi-colon, but not both */
 
   csiescseq.narg = 0;
   if (*p == '?')
@@ -1281,7 +1285,9 @@ void csiparse(void)
     csiescseq.arg[csiescseq.narg++] = v;
     p = np;
     readcolonargs(&p, csiescseq.narg - 1, csiescseq.carg);
-    if (*p != ';' || csiescseq.narg == ESC_ARG_SIZ)
+    if (sep == ';' && *p == ':')
+      sep = ':'; /* allow override to colon once */
+    if (*p != sep || csiescseq.narg == ESC_ARG_SIZ)
       break;
     p++;
   }
@@ -1806,7 +1812,7 @@ void csihandle(void)
       ttywrite(vtiden, strlen(vtiden), 0);
     break;
   case 'b': /* REP -- if last char is printable print it <n> more times */
-    DEFAULT(csiescseq.arg[0], 1);
+    LIMIT(csiescseq.arg[0], 1, 65535);
     if (term.lastc)
       while (csiescseq.arg[0]-- > 0)
         tputc(term.lastc);
@@ -1893,6 +1899,8 @@ void csihandle(void)
     }
     break;
   case 'S': /* SU -- Scroll <n> line up */
+    if (csiescseq.priv)
+      break;
     DEFAULT(csiescseq.arg[0], 1);
     tscrollup(term.top, csiescseq.arg[0], 0);
     break;
@@ -1934,11 +1942,18 @@ void csihandle(void)
     tsetattr(csiescseq.arg, csiescseq.narg);
     break;
   case 'n': /* DSR – Device Status Report (cursor position) */
-    if (csiescseq.arg[0] == 6)
+    switch (csiescseq.arg[0])
     {
+    case 5: /* Status Report "OK" `On` */
+      ttywrite("\033[0n", sizeof("\033[0n") - 1, 0);
+      break;
+    case 6: /* Report Cursor Position (CPR) "<row>;<column>R" */
       len =
           snprintf(buf, sizeof(buf), "\033[%i;%iR", term.c.y + 1, term.c.x + 1);
       ttywrite(buf, len, 0);
+      break;
+    default:
+      goto unknown;
     }
     break;
   case 'r': /* DECSTBM -- Set Scrolling Region */
@@ -2124,7 +2139,10 @@ void strhandle(void)
       else if (xsetcolorname(j, p))
       {
         if (par == 104 && narg <= 1)
+        {
+          xloadcols();
           return; /* color reset without parameter */
+        }
         fprintf(stderr, "erresc: invalid color j=%d, p=%s\n", j,
                 p ? p : "(null)");
       }
@@ -2579,6 +2597,7 @@ int eschandle(uchar ascii)
     treset();
     resettitle();
     xloadcols();
+    xsetmode(0, MODE_HIDE);
     break;
   case '=': /* DECPAM -- Application keypad */
     xsetmode(1, MODE_APPKEYPAD);
@@ -2676,6 +2695,9 @@ check_control_code:
    */
   if (control)
   {
+    /* in UTF-8 mode ignore handling C1 control characters */
+    if (IS_SET(MODE_UTF8) && ISCONTROLC1(u))
+      return;
     tcontrolcode(u);
     /*
      * control codes are not shown ever
@@ -2735,11 +2757,17 @@ check_control_code:
   }
 
   if (IS_SET(MODE_INSERT) && term.c.x + width < term.col)
+  {
     memmove(gp + width, gp, (term.col - term.c.x - width) * sizeof(Glyph));
+    gp->mode &= ~ATTR_WIDE;
+  }
 
   if (term.c.x + width > term.col)
   {
-    tnewline(1);
+    if (IS_SET(MODE_WRAP))
+      tnewline(1);
+    else
+      tmoveto(term.col - width, term.c.y);
     gp = &term.line[term.c.y][term.c.x];
   }
 
