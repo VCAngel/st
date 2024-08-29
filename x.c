@@ -761,7 +761,10 @@ void xloadcols(void) {
   static int loaded;
   Color *cp;
 
-  if (!loaded) {
+  if (loaded) {
+    for (cp = dc.col; cp < &dc.col[dc.collen]; ++cp)
+      XftColorFree(xw.dpy, xw.vis, xw.cmap, cp);
+  } else {
     dc.collen = 1 + (defaultbg = MAX(LEN(colorname), 256));
     dc.col = xmalloc(dc.collen * sizeof(Color));
   }
@@ -782,7 +785,7 @@ void xloadcols(void) {
 }
 
 int xgetcolor(int x, unsigned char *r, unsigned char *g, unsigned char *b) {
-  if (!BETWEEN(x, 0, dc.collen))
+  if (!BETWEEN(x, 0, dc.collen - 1))
     return 1;
 
   *r = dc.col[x].color.red >> 8;
@@ -795,7 +798,7 @@ int xgetcolor(int x, unsigned char *r, unsigned char *g, unsigned char *b) {
 int xsetcolorname(int x, const char *name) {
   Color ncolor;
 
-  if (!BETWEEN(x, 0, dc.collen))
+  if (!BETWEEN(x, 0, dc.collen - 1))
     return 1;
 
   if (!xloadcolor(x, name, &ncolor))
@@ -1156,16 +1159,19 @@ int xicdestroy(XIC xim, XPointer client, XPointer call) {
 void xinit(int cols, int rows) {
   XGCValues gcvalues;
   Cursor cursor;
-  Window parent;
+  Window parent, root;
   pid_t thispid = getpid();
   XColor xmousefg, xmousebg;
   XWindowAttributes attr;
   XVisualInfo vis;
 
+  if (!(xw.dpy = XOpenDisplay(NULL)))
+    die("can't open display\n");
   xw.scr = XDefaultScreen(xw.dpy);
 
+  root = XRootWindow(xw.dpy, xw.scr);
   if (!(opt_embed && (parent = strtol(opt_embed, NULL, 0)))) {
-    parent = XRootWindow(xw.dpy, xw.scr);
+    parent = root;
     xw.depth = 32;
   } else {
     XGetWindowAttributes(xw.dpy, parent, &attr);
@@ -1212,6 +1218,9 @@ void xinit(int cols, int rows) {
                          CWBackPixel | CWBorderPixel | CWBitGravity |
                              CWEventMask | CWColormap,
                          &xw.attrs);
+
+  if (parent != root)
+    XReparentWindow(xw.dpy, xw.win, parent, xw.l, xw.t);
 
   memset(&gcvalues, 0, sizeof(gcvalues));
   gcvalues.graphics_exposures = False;
@@ -2013,6 +2022,9 @@ void xseticontitle(char *p) {
   XTextProperty prop;
   DEFAULT(p, opt_title);
 
+  if (p[0] == '\0')
+    p = opt_title;
+
   if (Xutf8TextListToTextProperty(xw.dpy, &p, 1, XUTF8StringStyle, &prop) !=
       Success)
     return;
@@ -2197,11 +2209,9 @@ char *kmap(KeySym k, uint state) {
 
 void kpress(XEvent *ev) {
   XKeyEvent *e = &ev->xkey;
-  KeySym ksym;
-  char *buf = NULL, *customkey;
-  int len = 0;
-  int buf_size = 64;
-  int critical = -1;
+  KeySym ksym = NoSymbol;
+  char buf[64], *customkey;
+  int len;
   Rune c;
   Status status;
   Shortcut *bp;
@@ -2209,44 +2219,32 @@ void kpress(XEvent *ev) {
   if (IS_SET(MODE_KBDLOCK))
     return;
 
-reallocbuf:
-  if (critical > 0)
-    goto cleanup;
-  if (buf)
-    free(buf);
-
-  buf = xmalloc((buf_size) * sizeof(char));
-  critical += 1;
-
   if (xw.ime.xic) {
-    len = XmbLookupString(xw.ime.xic, e, buf, buf_size, &ksym, &status);
+    len = XmbLookupString(xw.ime.xic, e, buf, sizeof buf, &ksym, &status);
     if (status == XBufferOverflow) {
-      buf_size = len;
-      goto reallocbuf;
+      return;
     }
   } else {
-    // Not sure how to fix this and if it is fixable
-    // but at least it does write something into the buffer
-    // so it is not as critical
-    len = XLookupString(e, buf, buf_size, &ksym, NULL);
+    len = XLookupString(e, buf, sizeof buf, &ksym, NULL);
   }
+
   /* 1. shortcuts */
   for (bp = shortcuts; bp < shortcuts + LEN(shortcuts); bp++) {
     if (ksym == bp->keysym && match(bp->mod, e->state)) {
       bp->func(&(bp->arg));
-      goto cleanup;
+      return;
     }
   }
 
   /* 2. custom keys from config.h */
   if ((customkey = kmap(ksym, e->state))) {
     ttywrite(customkey, strlen(customkey), 1);
-    goto cleanup;
+    return;
   }
 
   /* 3. composed string from input method */
   if (len == 0)
-    goto cleanup;
+    return;
   if (len == 1 && e->state & Mod1Mask) {
     if (IS_SET(MODE_8BIT)) {
       if (*buf < 0177) {
@@ -2259,11 +2257,7 @@ reallocbuf:
       len = 2;
     }
   }
-  if (len <= buf_size)
-    ttywrite(buf, len, 1);
-cleanup:
-  if (buf)
-    free(buf);
+  ttywrite(buf, len, 1);
 }
 
 void cmessage(XEvent *e) {
