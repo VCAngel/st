@@ -1,3 +1,6 @@
+# My st version:
+CUSTOM_VERSION = 1.0.1
+
 # st version
 VERSION = 0.9.2
 

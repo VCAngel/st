@@ -40,6 +40,8 @@ dist: clean
 	rm -rf st-$(VERSION)
 
 install: st
+	@echo "Installing @VCAngel's st v$(CUSTOM_VERSION)! ＼(￣▽ ￣)／"
+	@echo "- - - - - - - - - - -"
 	mkdir -p $(DESTDIR)$(PREFIX)/bin
 	cp -f st $(DESTDIR)$(PREFIX)/bin
 	cp -f st-copyout $(DESTDIR)$(PREFIX)/bin
